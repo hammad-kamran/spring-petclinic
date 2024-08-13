@@ -103,9 +103,9 @@ jobs:
           ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts || true
       - name: Deploy application
         env:
-          DEPLOY_SERVER: '103.151.111.202'
+          DEPLOY_SERVER: '103.172.26.38'
           DEPLOY_PORT: '8080'
-          DEPLOY_USER: 'waqas'
+          DEPLOY_USER: 'raziel'
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           echo "Deploying application to $DEPLOY_SERVER"
@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "Waiting for application to start..."
           for i in {1..30}; do
-            if curl -s http://103.151.111.202:8080 > /dev/null; then
+            if curl -s http://103.172.26.38:8080 > /dev/null; then
               echo "Application is up!"
               break
             else
