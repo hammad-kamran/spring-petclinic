@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "Waiting for application to start..."
           for i in {1..30}; do
-            if curl -s http://103.172.26.38:8080 > /dev/null; then
+            if curl -s http://103.151.111.202:8080 > /dev/null; then
               echo "Application is up!"
               break
             else
