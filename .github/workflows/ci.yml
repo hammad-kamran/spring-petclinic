@@ -1,0 +1,110 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    services:
+      mysql:
+        image: mysql:5.6
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_USER: petclinic
+          MYSQL_PASSWORD: petclinic
+          MYSQL_DATABASE: petclinic
+
+      postgres:
+        image: postgres:16.3
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        env:
+          POSTGRES_PASSWORD: petclinic
+          POSTGRES_USER: petclinic
+          POSTGRES_DB: petclinic
+
+    strategy:
+      matrix:
+        java: [ '17' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build with Maven
+        run: ./mvnw -B package
+
+      - name: Run tests
+        run: ./mvnw test
+
+      - name: Build Docker Image
+        run: docker build -f .devcontainer/Dockerfile -t my-app .
+
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Run Docker Compose
+        run: docker-compose up -d
+
+      - name: Run Integration Tests
+        run: ./mvnw verify -Pintegration-test
+
+      - name: Tear Down Docker Compose
+        run: docker-compose down
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: target/*.jar
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        run: |
+          echo "Skipping deployment due to missing SSH credentials"
+          # You can add alternative deployment commands here if needed
+
+  test:
+    runs-on: self-hosted
+    needs: deploy
+    steps:
+      - name: Check Application Status
+        run: |
+          curl -I http://103.151.111.242:8080
+
+      - name: Run Post-Deployment Tests
+        run: |
+          # Add your specific post-deployment test commands here
+          # Example: curl -I http://103.172.26.39:81/endpoint
