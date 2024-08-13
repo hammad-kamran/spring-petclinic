@@ -102,7 +102,7 @@ jobs:
     steps:
       - name: Check Application Status
         run: |
-          curl -I http://103.172.26.39:81
+          curl -I http://103.151.111.242:8080
 
       - name: Run Post-Deployment Tests
         run: |
